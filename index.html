@@ -1,42 +1,249 @@
-name: Build 3D Flip Calendar APK
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Flip Glassmorphism Calendar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #7db3e3 0%, #d3a4ed 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: #fff;
+        }
 
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
+        .blur-circle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            z-index: 1;
+        }
+        .circle-yellow { 
+            width: 200px; height: 200px; 
+            background: rgba(238, 240, 144, 0.8); 
+            top: 10%; right: 15%; 
+        }
+        .circle-pink { 
+            width: 250px; height: 250px; 
+            background: rgba(242, 155, 175, 0.8); 
+            top: 40%; left: 10%; 
+        }
+        .circle-blue { 
+            width: 300px; height: 300px; 
+            background: rgba(181, 204, 250, 0.8); 
+            bottom: -5%; right: -5%; 
+        }
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+        .scene {
+            width: 340px;
+            height: 620px;
+            perspective: 1200px;
+            z-index: 2;
+        }
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.8s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
 
-      - name: Accept Android SDK Licenses
-        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
 
-      - name: Install Cordova
-        run: npm install -g cordova
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
+            padding: 30px 25px;
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.15);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
 
-      - name: Create Android project
-        run: |
-          mkdir -p www
-          cp index.html www/index.html
-          cordova create app com.flipcalendar.app "Flip Calendar"
-          cp -r www/. app/www/
-          cd app
-          cordova platform add android
-          cordova build android
+        .card-face-back {
+            transform: rotateY(180deg);
+        }
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: 3D-Flip-Calendar-APK
-          path: app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+        .header-time { font-size: 16px; font-weight: 300; margin-bottom: 5px; opacity: 0.9; }
+        .header-title { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 25px; }
+        .header-title h1 { 
+            margin: 0; font-size: 32px; font-weight: 700; 
+            letter-spacing: 1px; text-transform: uppercase;
+            text-shadow: 1px 2px 4px rgba(0,0,0,0.1); 
+        }
+        .header-title .year-day { 
+            font-size: 11px; font-weight: 600; line-height: 1.3; 
+            margin-top: 6px; letter-spacing: 0.5px; opacity: 0.85; 
+            text-transform: uppercase;
+        }
+
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            text-align: center; 
+            gap: 12px 0; 
+        }
+        .weekdays { 
+            margin-bottom: 12px; font-size: 11px; 
+            font-weight: 600; letter-spacing: 0.5px; opacity: 0.8; 
+        }
+        .days { font-size: 15px; font-weight: 400; }
+        .text-red { color: #ff5252; font-weight: 600; }
+        
+        .days div { 
+            position: relative; display: flex; 
+            justify-content: center; align-items: center; height: 25px; 
+        }
+        .event-line::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            width: 18px;
+            height: 2px;
+            background: #ffeb3b;
+            border-radius: 2px;
+            box-shadow: 0 1px 3px rgba(255, 235, 59, 0.4);
+        }
+
+        .events-list { 
+            margin-top: 25px; font-size: 12px; line-height: 1.6; 
+            opacity: 0.9; font-weight: 400; flex-grow: 1; 
+        }
+        .event-item { display: flex; gap: 15px; margin-bottom: 8px; }
+        .event-date { width: 35px; font-weight: 600; }
+
+        .switch-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            width: 100%;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(5px);
+        }
+        .switch-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        .switch-btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="blur-circle circle-yellow"></div>
+    <div class="blur-circle circle-pink"></div>
+    <div class="blur-circle circle-blue"></div>
+
+    <div class="scene">
+        <div class="card" id="calendarCard">
+            
+            <div class="card-face card-face-front">
+                <div class="header-time">17:22</div>
+                <div class="header-title">
+                    <h1>டிசம்பர்</h1>
+                    <div class="year-day">2023<br>திங்கள்</div>
+                </div>
+
+                <div class="grid weekdays">
+                    <div class="text-red">ஞா</div><div>தி</div><div>செ</div><div>பு</div><div>வியா</div><div>வெ</div><div>சனி</div>
+                </div>
+
+                <div class="grid days">
+                    <div></div><div></div><div></div><div></div><div></div><div class="event-line">1</div><div>2</div>
+                    <div class="text-red">3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div>
+                    <div class="text-red">10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div>
+                    <div class="text-red">17</div><div class="event-line">18</div><div>19</div><div>20</div><div>21</div><div class="event-line">22</div><div class="event-line">23</div>
+                    <div class="text-red event-line">24</div><div class="event-line">25</div><div>26</div><div>27</div><div>28</div><div>29</div><div>30</div>
+                    <div class="text-red">31</div>
+                </div>
+
+                <div class="events-list">
+                    <div class="event-item"><span class="event-date">1</span> உலக எய்ட்ஸ் தினம்</div>
+                    <div class="event-item"><span class="event-date">18</span> புளான் & பிண்டாங் பிறந்தநாள்</div>
+                    <div class="event-item"><span class="event-date">22</span> அன்னையர் தினம்</div>
+                    <div class="event-item"><span class="event-date">23-24</span> 4வது ஆண்டு விழா</div>
+                    <div class="event-item"><span class="event-date">25</span> கிறிஸ்துமஸ் தினம்</div>
+                </div>
+                
+                <button class="switch-btn" onclick="flipCard()">
+                    English Calendar <span>🔄</span>
+                </button>
+            </div>
+
+            <div class="card-face card-face-back">
+                <div class="header-time">17:22</div>
+                <div class="header-title">
+                    <h1>DECEMBER</h1>
+                    <div class="year-day">2023<br>MONDAY</div>
+                </div>
+
+                <div class="grid weekdays">
+                    <div class="text-red">SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THUR</div><div>FRI</div><div>SAT</div>
+                </div>
+
+                <div class="grid days">
+                    <div></div><div></div><div></div><div></div><div></div><div class="event-line">1</div><div>2</div>
+                    <div class="text-red">3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div>
+                    <div class="text-red">10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div>
+                    <div class="text-red">17</div><div class="event-line">18</div><div>19</div><div>20</div><div>21</div><div class="event-line">22</div><div class="event-line">23</div>
+                    <div class="text-red event-line">24</div><div class="event-line">25</div><div>26</div><div>27</div><div>28</div><div>29</div><div>30</div>
+                    <div class="text-red">31</div>
+                </div>
+
+                <div class="events-list">
+                    <div class="event-item"><span class="event-date">1</span> World AIDS Day</div>
+                    <div class="event-item"><span class="event-date">18</span> Bulan & Bintang Birthday</div>
+                    <div class="event-item"><span class="event-date">22</span> Mother's Day</div>
+                    <div class="event-item"><span class="event-date">23-24</span> 4th Anniversary</div>
+                    <div class="event-item"><span class="event-date">25</span> Christmas Day</div>
+                </div>
+
+                <button class="switch-btn" onclick="flipCard()">
+                    தமிழ் காலண்டர் <span>🔄</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function flipCard() {
+            const card = document.getElementById('calendarCard');
+            // Toggle the 'is-flipped' class to trigger the CSS 3D transform
+            card.classList.toggle('is-flipped');
+        }
+    </script>
+</body>
+</html>
+
+
