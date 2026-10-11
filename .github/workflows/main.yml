@@ -1,4 +1,4 @@
-name: Build Tamil Panchangam APK
+name: Build 3D Flip Calendar APK
 
 on:
   workflow_dispatch:
@@ -22,7 +22,6 @@ jobs:
       - name: Accept Android SDK Licenses
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
 
-
       - name: Install Cordova
         run: npm install -g cordova
 
@@ -30,7 +29,7 @@ jobs:
         run: |
           mkdir -p www
           cp index.html www/index.html
-          cordova create app com.tamilpanchangam.app "Tamil Panchangam"
+          cordova create app com.flipcalendar.app "Flip Calendar"
           cp -r www/. app/www/
           cd app
           cordova platform add android
@@ -39,5 +38,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Tamil-Panchangam-APK
+          name: 3D-Flip-Calendar-APK
           path: app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
