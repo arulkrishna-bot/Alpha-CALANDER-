@@ -1,45 +1,42 @@
 name: Build Tamil Panchangam APK
 
 on:
-workflow_dispatch:
-push:
-branches:
-- main
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-build:
-runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-```
-steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-  - name: Setup Java
-    uses: actions/setup-java@v4
-    with:
-      distribution: temurin
-      java-version: '17'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-  - name: Setup Android SDK
-    uses: android-actions/setup-android@v3
+      - name: Install Cordova
+        run: npm install -g cordova
 
-  - name: Install Cordova
-    run: npm install -g cordova
+      - name: Create Android project
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+          cordova create app com.tamilpanchangam.app "Tamil Panchangam"
+          cp -r www/. app/www/
+          cd app
+          cordova platform add android
+          cordova build android
 
-  - name: Create Android project
-    run: |
-      mkdir -p www
-      cp index.html www/index.html
-      cordova create app com.tamilpanchangam.app "Tamil Panchangam"
-      cp -r www/. app/www/
-      cd app
-      cordova platform add android
-      cordova build android
-
-  - name: Upload APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: Tamil-Panchangam-APK
-      path: app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
-```
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tamil-Panchangam-APK
+          path: app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
